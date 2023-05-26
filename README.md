@@ -9,13 +9,13 @@ m.html
 
 http://web.luhui.net
 
-https://nav.luhui.net/
+http://nav.luhui.net/
 
-https://daohang.luhui.net/
+http://daohang.luhui.net/
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/502e1979-2955-4303-ac96-7a47e903af16/deploy-status)](https://app.netlify.com/sites/webdaohang/deploys)
 
-https://webdaohang.netlify.app/
+http://webdaohang.netlify.app/
 
 Thank you
 
