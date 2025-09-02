@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网址导航系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        dark: '#1F2937',
+                        light: '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .nav-item {
+                @apply px-4 py-2 rounded-md transition-colors hover:bg-primary/10 cursor-pointer;
+            }
+            .nav-item.active {
+                @apply bg-primary/20 font-medium text-primary;
+            }
+            .pagination-item {
+                @apply w-9 h-9 flex items-center justify-center rounded-md border border-gray-300 hover:border-primary hover:text-primary transition-colors;
+            }
+            .pagination-item.active {
+                @apply bg-primary text-white border-primary;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-compass text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-dark">网址导航</h1>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">首页</a>
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">关于</a>
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">反馈</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-moon-o text-gray-600"></i>
+                </button>
+                <button id="mobile-menu-btn" class="p-2 rounded-full hover:bg-gray-100 transition-colors md:hidden">
+                    <i class="fa fa-bars text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 搜索栏 -->
+        <div class="bg-gray-100 py-4">
+            <div class="container mx-auto px-4">
+                <div class="relative max-w-2xl mx-auto">
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="搜索网站..." 
+                        class="w-full py-3 px-5 pr-12 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                    >
+                    <button id="search-button" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors">
+                        <i class="fa fa-search text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- 左侧分类导航 -->
+            <aside class="md:w-64 lg:w-72 shrink-0">
+                <div class="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fa fa-folder-open text-primary mr-2"></i>分类导航
+                    </h2>
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-500 mb-2">分类共 <span id="total-categories" class="font-medium text-primary">0</span> 个</p>
+                        <p class="text-sm text-gray-500">网站共 <span id="total-websites" class="font-medium text-primary">0</span> 个</p>
+                    </div>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="category-search"
+                            placeholder="搜索分类..." 
+                            class="w-full py-2 px-4 pr-8 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        >
+                        <i class="fa fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    </div>
+                    <div class="mt-4 max-h-[calc(100vh-320px)] overflow-y-auto pr-1 scrollbar-thin">
+                        <ul id="category-list" class="space-y-1">
+                            <!-- 分类将通过JavaScript动态生成 -->
+                            <li class="flex items-center justify-center py-4 text-gray-500">
+                                <i class="fa fa-spinner fa-spin mr-2"></i>加载分类中...
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- 分类分页 -->
+                    <div id="category-pagination" class="mt-4 flex justify-center items-center space-x-1 hidden">
+                        <button id="category-prev" class="pagination-item" disabled>
+                            <i class="fa fa-chevron-left text-xs"></i>
+                        </button>
+                        <div id="category-pages" class="flex space-x-1">
+                            <!-- 分类分页按钮将动态生成 -->
+                        </div>
+                        <button id="category-next" class="pagination-item" disabled>
+                            <i class="fa fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- 右侧网站列表 -->
+            <div class="flex-1">
+                <!-- 分类标题 -->
+                <div class="mb-6">
+                    <h2 id="category-title" class="text-2xl font-bold text-dark">全部网站</h2>
+                    <p id="category-description" class="text-gray-500 mt-1">发现并访问各类优质网站</p>
+                    <div class="flex items-center mt-2 text-sm text-gray-500">
+                        <span id="website-count"><i class="fa fa-spinner fa-spin mr-1"></i>统计中...</span>
+                    </div>
+                </div>
+                
+                <!-- 网站列表 -->
+                <div id="website-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- 网站卡片将通过JavaScript动态生成 -->
+                    <div class="col-span-full py-12 text-center">
+                        <i class="fa fa-spinner fa-spin text-gray-300 text-5xl mb-4"></i>
+                        <p class="text-gray-500">加载网站中...</p>
+                    </div>
+                </div>
+                
+                <!-- 网站列表分页 -->
+                <div id="website-pagination" class="mt-8 flex justify-center items-center space-x-1 hidden">
+                    <button id="website-prev" class="pagination-item" disabled>
+                        <i class="fa fa-chevron-left text-xs"></i>
+                    </button>
+                    <div id="website-pages" class="flex flex-wrap justify-center gap-1">
+                        <!-- 网站分页按钮将动态生成 -->
+                    </div>
+                    <button id="website-next" class="pagination-item" disabled>
+                        <i class="fa fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 网站详情模态框 -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 id="detail-title" class="text-xl font-bold"></h3>
+                    <button id="close-modal" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <i class="fa fa-times text-gray-500"></i>
+                    </button>
+                </div>
+                
+                <div class="border-b pb-4 mb-4">
+                    <p class="text-gray-500 mb-2 flex items-center">
+                        <i class="fa fa-link mr-2"></i>
+                        <a id="detail-url" href="#" target="_blank" class="text-primary hover:underline"></a>
+                    </p>
+                    <p class="text-gray-500 mb-2 flex items-center">
+                        <i class="fa fa-folder mr-2"></i>
+                        <span id="detail-category"></span>
+                    </p>
+                    <p id="detail-short-desc" class="text-gray-600"></p>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-2">详细测评</h4>
+                    <div id="detail-full-review" class="text-gray-700 leading-relaxed"></div>
+                </div>
+                
+                <div class="mt-6 flex justify-between items-center">
+                    <div class="flex space-x-3">
+                        <button id="prev-website" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="fa fa-chevron-left mr-2"></i> 上一页
+                        </button>
+                        <button id="next-website" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            下一页 <i class="fa fa-chevron-right ml-2"></i>
+                        </button>
+                    </div>
+                    <a id="visit-button" href="#" target="_blank" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+                        <i class="fa fa-external-link mr-2"></i> 访问网站
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-12 mt-16">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fa fa-compass text-primary mr-2"></i>网址导航
+                    </h3>
+                    <p class="text-gray-400">提供优质、安全、实用的网站导航服务，让您的网络生活更便捷。</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">快速链接</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-primary transition-colors">首页</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">关于我们</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">联系方式</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">使用帮助</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">关注我们</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-primary transition-colors">
+                            <i class="fa fa-weibo"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-primary transition-colors">
+                            <i class="fa fa-wechat"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-primary transition-colors">
+                            <i class="fa fa-github"></i>
+                        </a>
+                    </div>
+                    <p class="mt-4 text-gray-400">反馈邮箱: feedback@example.com</p>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500">
+                <p>© 2023 网址导航系统 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 系统配置
+        const config = {
+            categories: [
+                { id: 'social', name: '社交平台', description: '国内外主流社交网络平台' },
+                { id: 'search', name: '搜索引擎', description: '各类搜索引擎服务' },
+                { id: 'life', name: '生活服务', description: '提供各类生活相关服务的网站' },
+                { id: 'gov', name: '政府网站', description: '各级政府及相关机构官方网站' },
+                { id: 'email', name: '邮箱服务', description: '各类电子邮件服务提供商' },
+                { id: 'company', name: '商业公司', description: '各类商业企业官方网站' },
+                { id: 'edu', name: '文化教育', description: '教育机构及文化类网站' },
+                { id: 'code', name: '软件源码', description: '软件开发及源代码相关网站' },
+                { id: 'structure', name: '数据算法', description: '数据处理及算法相关网站' },
+                { id: 'news', name: '新闻传媒', description: '新闻媒体及资讯类网站' },
+                { id: 'picture', name: '图片网站', description: '图片分享及素材类网站' },
+                { id: 'video', name: '影视音乐', description: '电影、电视、音乐相关网站' },
+                { id: 'games', name: '游戏娱乐', description: '各类游戏及娱乐网站' },
+                { id: 'animation', name: '动画制作', description: '动画创作及相关资源网站' },
+                { id: 'dia', name: '设计智造', description: '设计及智能制造相关网站' }
+            ],
+            categoriesPerPage: 10,
+            websitesPerPage: 6,
+            maxWebsitePerCategory: 50
+        };
+
+        // 存储所有加载的网站数据
+        let allWebsites = [];
+        let filteredCategories = [];
+        
+        // 当前状态
+        let currentCategory = null;
+        let currentSearchQuery = '';
+        let currentWebsitePage = 1;
+        let currentCategoryPage = 1;
+        let filteredWebsites = [];
+        let totalWebsitePages = 1;
+        let totalCategoryPages = 1;
+
+        // DOM元素
+        const categoryList = document.getElementById('category-list');
+        const categoryTitle = document.getElementById('category-title');
+        const categoryDescription = document.getElementById('category-description');
+        const websiteCount = document.getElementById('website-count');
+        const totalCategoriesEl = document.getElementById('total-categories');
+        const totalWebsitesEl = document.getElementById('total-websites');
+        const websiteGrid = document.getElementById('website-grid');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const categorySearchInput = document.getElementById('category-search');
+        const detailModal = document.getElementById('detail-modal');
+        const detailTitle = document.getElementById('detail-title');
+        const detailUrl = document.getElementById('detail-url');
+        const detailCategory = document.getElementById('detail-category');
+        const detailShortDesc = document.getElementById('detail-short-desc');
+        const detailFullReview = document.getElementById('detail-full-review');
+        const visitButton = document.getElementById('visit-button');
+        const closeModal = document.getElementById('close-modal');
+        const prevWebsiteBtn = document.getElementById('prev-website');
+        const nextWebsiteBtn = document.getElementById('next-website');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        // 分页元素
+        const websitePagination = document.getElementById('website-pagination');
+        const websitePrevBtn = document.getElementById('website-prev');
+        const websiteNextBtn = document.getElementById('website-next');
+        const websitePagesEl = document.getElementById('website-pages');
+        
+        const categoryPagination = document.getElementById('category-pagination');
+        const categoryPrevBtn = document.getElementById('category-prev');
+        const categoryNextBtn = document.getElementById('category-next');
+        const categoryPagesEl = document.getElementById('category-pages');
+
+        // 初始化页面
+        async function init() {
+            // 从URL参数加载初始状态
+            loadFromUrlParams();
+            
+            // 渲染分类和加载网站
+            renderCategories();
+            await loadAllWebsites();
+            
+            // 根据URL参数显示相应内容
+            if (currentSearchQuery) {
+                searchInput.value = currentSearchQuery;
+                handleSearch();
+            } else if (currentCategory) {
+                showCategoryWebsites(currentCategory);
+            } else {
+                showAllWebsites();
+            }
+            
+            // 事件监听 - 使用更可靠的事件委托方式
+            document.addEventListener('click', handleGlobalClick);
+            searchInput.addEventListener('input', debounce(handleSearch, 500));
+            categorySearchInput.addEventListener('input', debounce(filterCategories, 300));
+            
+            // 分页事件
+            websitePrevBtn.addEventListener('click', () => changeWebsitePage(currentWebsitePage - 1));
+            websiteNextBtn.addEventListener('click', () => changeWebsitePage(currentWebsitePage + 1));
+            categoryPrevBtn.addEventListener('click', () => changeCategoryPage(currentCategoryPage - 1));
+            categoryNextBtn.addEventListener('click', () => changeCategoryPage(currentCategoryPage + 1));
+            
+            // 上一页/下一页按钮事件
+            prevWebsiteBtn.addEventListener('click', goToPrevWebsite);
+            nextWebsiteBtn.addEventListener('click', goToNextWebsite);
+        }
+
+        // 全局点击事件处理 - 解决动态元素事件绑定问题
+        function handleGlobalClick(e) {
+            // 搜索按钮点击
+            if (e.target.closest('#search-button')) {
+                handleSearch();
+                return;
+            }
+            
+            // 关闭模态框
+            if (e.target.closest('#close-modal') || e.target === detailModal) {
+                detailModal.classList.remove('flex');
+                detailModal.classList.add('hidden');
+                updateUrlParams();
+                return;
+            }
+            
+            // 分类项点击
+            const categoryItem = e.target.closest('.nav-item[data-category]');
+            if (categoryItem) {
+                const categoryId = categoryItem.dataset.category;
+                setActiveCategory(categoryId);
+                if (categoryId === 'all') {
+                    showAllWebsites();
+                } else {
+                    showCategoryWebsites(categoryId);
+                }
+                return;
+            }
+            
+            // 网站详情按钮点击
+            const detailBtn = e.target.closest('.view-detail');
+            if (detailBtn) {
+                const data = detailBtn.dataset;
+                openDetailModal(
+                    data.name, 
+                    data.url, 
+                    data.categoryName, 
+                    data.short, 
+                    data.full,
+                    data.category,
+                    data.id
+                );
+                
+                // 更新URL参数
+                const params = new URLSearchParams(window.location.search);
+                params.set('ai', data.category);
+                params.set('id', data.id);
+                window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+                return;
+            }
+            
+            // 分类分页按钮点击
+            const categoryPageBtn = e.target.closest('#category-pages .pagination-item');
+            if (categoryPageBtn) {
+                const page = parseInt(categoryPageBtn.textContent);
+                changeCategoryPage(page);
+                return;
+            }
+            
+            // 网站分页按钮点击
+            const websitePageBtn = e.target.closest('#website-pages .pagination-item');
+            if (websitePageBtn) {
+                const page = parseInt(websitePageBtn.textContent);
+                changeWebsitePage(page);
+                return;
+            }
+            
+            // 主题切换按钮
+            if (e.target.closest('#theme-toggle')) {
+                toggleTheme();
+                return;
+            }
+        }
+
+        // 从URL参数加载状态
+        function loadFromUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            
+            // 分类参数
+            if (params.has('ai')) {
+                currentCategory = params.get('ai');
+            }
+            
+            // 搜索参数
+            if (params.has('q')) {
+                currentSearchQuery = params.get('q');
+            }
+            
+            // 详情页参数
+            if (params.has('id') && currentCategory) {
+                const websiteId = params.get('id');
+                setTimeout(() => {
+                    openWebsiteDetail(currentCategory, websiteId);
+                }, 500); // 延迟确保数据已加载
+            }
+        }
+
+        // 更新URL参数
+        function updateUrlParams() {
+            const params = new URLSearchParams();
+            
+            // 添加分类参数
+            if (currentCategory && currentCategory !== 'all') {
+                params.append('ai', currentCategory);
+            }
+            
+            // 添加搜索参数
+            if (currentSearchQuery) {
+                params.append('q', currentSearchQuery);
+            }
+            
+            // 构建新URL
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            
+            // 更新URL而不刷新页面
+            window.history.pushState({}, '', newUrl);
+        }
+
+        // 渲染分类列表
+        function renderCategories() {
+            totalCategoriesEl.textContent = config.categories.length;
+            filteredCategories = [...config.categories];
+            totalCategoryPages = Math.ceil(filteredCategories.length / config.categoriesPerPage);
+            renderCategoryPage(currentCategoryPage);
+            updateCategoryPagination();
+        }
+
+        // 过滤分类
+        function filterCategories() {
+            const query = categorySearchInput.value.toLowerCase().trim();
+            
+            if (query === '') {
+                filteredCategories = [...config.categories];
+            } else {
+                filteredCategories = config.categories.filter(category => 
+                    category.name.toLowerCase().includes(query) ||
+                    category.description.toLowerCase().includes(query)
+                );
+            }
+            
+            totalCategoryPages = Math.ceil(filteredCategories.length / config.categoriesPerPage);
+            currentCategoryPage = 1; // 重置到第一页
+            renderCategoryPage(currentCategoryPage);
+            updateCategoryPagination();
+        }
+
+        // 渲染特定页的分类
+        function renderCategoryPage(page) {
+            // 清空现有内容
+            categoryList.innerHTML = '';
+            
+            // 添加"全部网站"选项
+            const allItem = document.createElement('li');
+            allItem.innerHTML = `
+                <a class="nav-item ${currentCategory === 'all' || !currentCategory ? 'active' : ''} flex items-center" data-category="all">
+                    <i class="fa fa-globe mr-2"></i>全部网站
+                    <span class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${allWebsites.length}</span>
+                </a>
+            `;
+            categoryList.appendChild(allItem);
+            
+            // 计算分页范围
+            const startIndex = (page - 1) * config.categoriesPerPage;
+            const endIndex = startIndex + config.categoriesPerPage;
+            const categoriesToShow = filteredCategories.slice(startIndex, endIndex);
+            
+            if (categoriesToShow.length === 0) {
+                const emptyItem = document.createElement('li');
+                emptyItem.innerHTML = `
+                    <div class="px-4 py-2 text-gray-500 text-sm">
+                        没有找到匹配的分类
+                    </div>
+                `;
+                categoryList.appendChild(emptyItem);
+                return;
+            }
+            
+            // 添加各个分类
+            categoriesToShow.forEach(category => {
+                // 计算该分类的网站数量
+                const categoryWebsiteCount = allWebsites.filter(w => w.categoryId === category.id).length;
+                
+                const item = document.createElement('li');
+                item.innerHTML = `
+                    <a class="nav-item ${currentCategory === category.id ? 'active' : ''} flex items-center" data-category="${category.id}">
+                        <i class="fa fa-folder mr-2"></i>${category.name}
+                        <span class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">${categoryWebsiteCount}</span>
+                    </a>
+                `;
+                categoryList.appendChild(item);
+            });
+        }
+
+        // 更新分类分页控件
+        function updateCategoryPagination() {
+            if (filteredCategories.length <= config.categoriesPerPage) {
+                categoryPagination.classList.add('hidden');
+                return;
+            }
+            
+            categoryPagination.classList.remove('hidden');
+            categoryPagesEl.innerHTML = '';
+            
+            // 添加页码按钮
+            for (let i = 1; i <= totalCategoryPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-item ${i === currentCategoryPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                categoryPagesEl.appendChild(pageBtn);
+            }
+            
+            // 更新上一页/下一页按钮状态
+            categoryPrevBtn.disabled = currentCategoryPage === 1;
+            categoryNextBtn.disabled = currentCategoryPage === totalCategoryPages;
+        }
+
+        // 更改分类页码
+        function changeCategoryPage(page) {
+            if (page < 1 || page > totalCategoryPages) return;
+            
+            currentCategoryPage = page;
+            renderCategoryPage(currentCategoryPage);
+            updateCategoryPagination();
+            
+            // 滚动到分类列表顶部
+            categoryList.scrollTop = 0;
+        }
+
+        // 设置当前激活的分类
+        function setActiveCategory(categoryId) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeItem = document.querySelector(`.nav-item[data-category="${categoryId}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+        }
+
+        // 加载所有分类的网站
+        async function loadAllWebsites() {
+            allWebsites = [];
+            
+            // 遍历每个分类
+            for (const category of config.categories) {
+                let categoryWebsites = [];
+                
+                // 尝试加载数字命名的TXT文件
+                for (let i = 1; i <= config.maxWebsitePerCategory; i++) {
+                    try {
+                        // 实际应用中，这里应该是从服务器加载文件
+                        const websiteData = await loadWebsiteData(category, i);
+                        
+                        if (websiteData) {
+                            categoryWebsites.push({
+                                id: `${i}`, // 仅使用数字作为ID，与文件名对应
+                                number: i,
+                                categoryId: category.id,
+                                categoryName: category.name,
+                                ...websiteData
+                            });
+                        } else {
+                            // 如果加载失败，可能是该编号的文件不存在，停止尝试更高编号
+                            break;
+                        }
+                    } catch (error) {
+                        console.log(`加载 ${category.id}/${i}.txt 失败:`, error);
+                        break;
+                    }
+                }
+                
+                // 添加到总列表
+                allWebsites.push(...categoryWebsites);
+            }
+            
+            // 更新总网站数
+            totalWebsitesEl.textContent = allWebsites.length;
+            
+            // 如果分类已经渲染完成，更新计数
+            config.categories.forEach(category => {
+                const countEl = document.querySelector(`.nav-item[data-category="${category.id}"] .rounded-full`);
+                if (countEl) {
+                    const categoryWebsiteCount = allWebsites.filter(w => w.categoryId === category.id).length;
+                    countEl.textContent = categoryWebsiteCount;
+                }
+            });
+            
+            // 更新"全部网站"计数
+            const allCountEl = document.querySelector(`.nav-item[data-category="all"] .rounded-full`);
+            if (allCountEl) {
+                allCountEl.textContent = allWebsites.length;
+            }
+            
+            return allWebsites;
+        }
+
+        // 加载单个网站数据
+        async function loadWebsiteData(category, number) {
+            // 模拟数据
+            const mockData = {
+                social: [
+                    { name: 'Facebook', url: 'https://facebook.com', shortDesc: '全球最大的社交网络平台', fullReview: 'Facebook是全球最大的社交网络服务网站，成立于2004年。' },
+                    { name: 'Twitter', url: 'https://twitter.com', shortDesc: '实时信息分享社交平台', fullReview: 'Twitter是一个基于短消息的社交网络平台。' },
+                    { name: 'Instagram', url: 'https://instagram.com', shortDesc: '图片和视频分享社交平台', fullReview: 'Instagram是一个专注于图片和视频分享的社交平台。' }
+                ],
+                search: [
+                    { name: 'Google', url: 'https://google.com', shortDesc: '全球最大的搜索引擎', fullReview: 'Google是全球最受欢迎的搜索引擎。' },
+                    { name: 'Bing', url: 'https://bing.com', shortDesc: '微软旗下的搜索引擎', fullReview: 'Bing是微软公司开发的搜索引擎。' }
+                ],
+                life: [
+                    { name: '大众点评', url: 'https://dianping.com', shortDesc: '本地生活信息及交易平台', fullReview: '大众点评是中国领先的本地生活信息及交易平台。' },
+                    { name: '美团', url: 'https://meituan.com', shortDesc: '生活服务电子商务平台', fullReview: '美团是中国领先的生活服务电子商务平台。' }
+                ],
+                gov: [
+                    { name: '中国政府网', url: 'https://www.gov.cn', shortDesc: '中国政府官方网站', fullReview: '中国政府网是国务院和各部门发布信息的平台。' }
+                ],
+                email: [
+                    { name: 'Gmail', url: 'https://gmail.com', shortDesc: 'Google提供的电子邮件服务', fullReview: 'Gmail是Google提供的免费电子邮件服务。' },
+                    { name: 'Outlook', url: 'https://outlook.com', shortDesc: '微软提供的电子邮件服务', fullReview: 'Outlook是微软提供的电子邮件服务。' }
+                ]
+            };
+            
+            // 为没有模拟数据的分类创建默认数据
+            if (!mockData[category.id]) {
+                mockData[category.id] = [];
+                for (let i = 1; i <= 2; i++) {
+                    mockData[category.id].push({
+                        name: `${category.name}网站 ${i}`,
+                        url: `https://example.com/${category.id}/${i}`,
+                        shortDesc: `${category.name}相关的网站，提供${category.name}相关服务。`,
+                        fullReview: `这是一个专注于${category.name}领域的网站。`
+                    });
+                }
+            }
+            
+            return mockData[category.id] && mockData[category.id][number - 1] ? 
+                   mockData[category.id][number - 1] : null;
+        }
+
+        // 显示所有网站
+        function showAllWebsites() {
+            currentCategory = 'all';
+            currentWebsitePage = 1;
+            
+            const category = {
+                name: '全部网站',
+                description: '发现并访问各类优质网站'
+            };
+            
+            categoryTitle.textContent = category.name;
+            categoryDescription.textContent = category.description;
+            websiteCount.textContent = `共 ${allWebsites.length} 个网站`;
+            
+            filteredWebsites = [...allWebsites];
+            renderWebsitePage(currentWebsitePage);
+            updateWebsitePagination();
+            
+            // 更新URL参数
+            updateUrlParams();
+        }
+
+        // 显示特定分类的网站
+        function showCategoryWebsites(categoryId) {
+            const category = config.categories.find(c => c.id === categoryId);
+            if (!category) return;
+            
+            currentCategory = categoryId;
+            currentWebsitePage = 1;
+            
+            categoryTitle.textContent = category.name;
+            categoryDescription.textContent = category.description;
+            
+            // 筛选该分类的网站
+            filteredWebsites = allWebsites.filter(website => website.categoryId === categoryId);
+            websiteCount.textContent = `共 ${filteredWebsites.length} 个网站`;
+            
+            renderWebsitePage(currentWebsitePage);
+            updateWebsitePagination();
+            
+            // 更新URL参数
+            updateUrlParams();
+        }
+
+        // 渲染特定页的网站
+        function renderWebsitePage(page) {
+            // 清空现有内容
+            websiteGrid.innerHTML = '';
+            
+            // 计算分页范围
+            const startIndex = (page - 1) * config.websitesPerPage;
+            const endIndex = startIndex + config.websitesPerPage;
+            const websitesToShow = filteredWebsites.slice(startIndex, endIndex);
+            
+            if (websitesToShow.length === 0) {
+                websiteGrid.innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <i class="fa fa-folder-open text-gray-300 text-5xl mb-4"></i>
+                        <p class="text-gray-500">该分类下暂无网站</p>
+                    </div>
+                `;
+                websitePagination.classList.add('hidden');
+                return;
+            }
+            
+            // 创建网站卡片
+            websitesToShow.forEach(website => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-sm overflow-hidden card-hover';
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-semibold text-lg">${website.name}</h3>
+                            <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">${website.categoryName}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">${website.shortDesc}</p>
+                        <div class="flex justify-between items-center">
+                            <a href="${website.url}" target="_blank" class="text-primary text-sm hover:underline flex items-center">
+                                <i class="fa fa-external-link mr-1"></i> 访问
+                            </a>
+                            <button class="text-gray-500 hover:text-primary text-sm view-detail" 
+                                    data-id="${website.id}"
+                                    data-category="${website.categoryId}"
+                                    data-name="${website.name}"
+                                    data-url="${website.url}"
+                                    data-category-name="${website.categoryName}"
+                                    data-short="${website.shortDesc}"
+                                    data-full="${website.fullReview}">
+                                <i class="fa fa-info-circle mr-1"></i> 详情
+                            </button>
+                        </div>
+                    </div>
+                `;
+                websiteGrid.appendChild(card);
+            });
+            
+            // 更新分页控件
+            updateWebsitePagination();
+        }
+
+        // 更新网站分页控件
+        function updateWebsitePagination() {
+            totalWebsitePages = Math.ceil(filteredWebsites.length / config.websitesPerPage);
+            
+            if (filteredWebsites.length <= config.websitesPerPage) {
+                websitePagination.classList.add('hidden');
+                return;
+            }
+            
+            websitePagination.classList.remove('hidden');
+            websitePagesEl.innerHTML = '';
+            
+            // 添加页码按钮
+            for (let i = 1; i <= totalWebsitePages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-item ${i === currentWebsitePage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                websitePagesEl.appendChild(pageBtn);
+            }
+            
+            // 更新上一页/下一页按钮状态
+            websitePrevBtn.disabled = currentWebsitePage === 1;
+            websiteNextBtn.disabled = currentWebsitePage === totalWebsitePages;
+        }
+
+        // 更改网站页码
+        function changeWebsitePage(page) {
+            if (page < 1 || page > totalWebsitePages) return;
+            
+            currentWebsitePage = page;
+            renderWebsitePage(currentWebsitePage);
+            
+            // 滚动到网站列表顶部
+            websiteGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // 打开详情模态框
+        function openDetailModal(name, url, category, shortDesc, fullReview, categoryId, websiteId) {
+            detailTitle.textContent = name;
+            detailUrl.textContent = url;
+            detailUrl.href = url;
+            detailCategory.textContent = category;
+            detailShortDesc.textContent = shortDesc;
+            detailFullReview.textContent = fullReview;
+            visitButton.href = url;
+            
+            // 存储当前网站信息，用于上一页/下一页导航
+            detailModal.dataset.categoryId = categoryId;
+            detailModal.dataset.websiteId = websiteId;
+            
+            // 确定上一页/下一页是否可用
+            const categoryWebsites = allWebsites.filter(w => w.categoryId === categoryId)
+                                                .sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            const currentIndex = categoryWebsites.findIndex(w => w.id === websiteId);
+            
+            prevWebsiteBtn.disabled = currentIndex <= 0;
+            nextWebsiteBtn.disabled = currentIndex >= categoryWebsites.length - 1;
+            
+            detailModal.classList.remove('hidden');
+            detailModal.classList.add('flex');
+        }
+
+        // 根据分类和ID打开网站详情
+        function openWebsiteDetail(categoryId, websiteId) {
+            const website = allWebsites.find(w => w.categoryId === categoryId && w.id === websiteId);
+            if (website) {
+                openDetailModal(
+                    website.name,
+                    website.url,
+                    website.categoryName,
+                    website.shortDesc,
+                    website.fullReview,
+                    website.categoryId,
+                    website.id
+                );
+            }
+        }
+
+        // 前往上一个网站
+        function goToPrevWebsite() {
+            const categoryId = detailModal.dataset.categoryId;
+            const websiteId = detailModal.dataset.websiteId;
+            
+            const categoryWebsites = allWebsites.filter(w => w.categoryId === categoryId)
+                                                .sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            const currentIndex = categoryWebsites.findIndex(w => w.id === websiteId);
+            
+            if (currentIndex > 0) {
+                const prevWebsite = categoryWebsites[currentIndex - 1];
+                openDetailModal(
+                    prevWebsite.name,
+                    prevWebsite.url,
+                    prevWebsite.categoryName,
+                    prevWebsite.shortDesc,
+                    prevWebsite.fullReview,
+                    prevWebsite.categoryId,
+                    prevWebsite.id
+                );
+                
+                // 更新URL参数
+                const params = new URLSearchParams(window.location.search);
+                params.set('ai', prevWebsite.categoryId);
+                params.set('id', prevWebsite.id);
+                window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+            }
+        }
+
+        // 前往下一个网站
+        function goToNextWebsite() {
+            const categoryId = detailModal.dataset.categoryId;
+            const websiteId = detailModal.dataset.websiteId;
+            
+            const categoryWebsites = allWebsites.filter(w => w.categoryId === categoryId)
+                                                .sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            const currentIndex = categoryWebsites.findIndex(w => w.id === websiteId);
+            
+            if (currentIndex < categoryWebsites.length - 1) {
+                const nextWebsite = categoryWebsites[currentIndex + 1];
+                openDetailModal(
+                    nextWebsite.name,
+                    nextWebsite.url,
+                    nextWebsite.categoryName,
+                    nextWebsite.shortDesc,
+                    nextWebsite.fullReview,
+                    nextWebsite.categoryId,
+                    nextWebsite.id
+                );
+                
+                // 更新URL参数
+                const params = new URLSearchParams(window.location.search);
+                params.set('ai', nextWebsite.categoryId);
+                params.set('id', nextWebsite.id);
+                window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+            }
+        }
+
+        // 处理搜索
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            currentSearchQuery = query;
+            currentWebsitePage = 1;
+            
+            if (query === '') {
+                // 搜索为空，显示当前分类的所有网站
+                if (currentCategory === 'all' || !currentCategory) {
+                    showAllWebsites();
+                } else {
+                    showCategoryWebsites(currentCategory);
+                }
+                return;
+            }
+            
+            // 过滤网站
+            const results = allWebsites.filter(website => 
+                website.name.toLowerCase().includes(query) || 
+                website.shortDesc.toLowerCase().includes(query) ||
+                website.fullReview.toLowerCase().includes(query) ||
+                website.categoryName.toLowerCase().includes(query)
+            );
+            
+            // 更新标题和描述
+            categoryTitle.textContent = `搜索结果: "${query}"`;
+            categoryDescription.textContent = `找到 ${results.length} 个匹配的网站`;
+            websiteCount.textContent = `共 ${results.length} 个网站`;
+            
+            // 更新筛选结果并渲染
+            filteredWebsites = results;
+            renderWebsitePage(currentWebsitePage);
+            updateWebsitePagination();
+            
+            // 更新URL参数
+            updateUrlParams();
+        }
+
+        // 主题切换功能
+        function toggleTheme() {
+            const icon = themeToggle.querySelector('i');
+            if (icon.classList.contains('fa-moon-o')) {
+                icon.classList.remove('fa-moon-o');
+                icon.classList.add('fa-sun-o');
+                document.body.classList.add('dark-theme');
+                // 这里可以添加深色主题的样式切换逻辑
+            } else {
+                icon.classList.remove('fa-sun-o');
+                icon.classList.add('fa-moon-o');
+                document.body.classList.remove('dark-theme');
+                // 这里可以添加浅色主题的样式切换逻辑
+            }
+        }
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+
+
+
+<!--版权说明开始
+/*
++------------------------------------------------------------------------+
+ System Name : Luhui Website Classification Navigation System V1.0.3
+ 系统名称 : 鲁虺网站分类导航系统 html JavaScript txt V1.0.3
++------------------------------------------------------------------------+
+ 创建 Created  2025-9-1 / 修改 Modify 2025-9-2
++------------------------------------------------------------------------+
+ Version : 1.0.3
++------------------------------------------------------------------------+
+ 版本更新 : 该版本所有详细更新细节都已在系统迭代说明中详述,如需了解请查阅鲁虺软件文档
+ 鲁虺软件 : http://soft.luhui.net 点击浏览鲁虺软件开发文档“软件开发”列表查询品鉴
++------------------------------------------------------------------------+
+ Author : 鲁虺文化网  冠富研究院  冠富商务通
++------------------------------------------------------------------------+
+ Powered by luhui.net 2004-01-11
++------------------------------------------------------------------------+
+ QQ : 63625244  tel:13162920188  tel:13386070835   tel:15900718107
+ Email : info@mail.luhui.net
+ 鲁虺文化网 : http://www.luhui.net
+ 冠富研究院 : http://www.guanfu.org
+ 冠富商务通 : http://www.guanfu.net.cn
++------------------------------------------------------------------------+
+ Note :
+
+ 1.本软件对于非商业用户完全免费,如果要使用在商业用途
+   方面,必须取得作者的授权.
+
+ 2.你可以任意传播以及修改本程序,但不能以任何形式删除
+   本程序的版权.请记住,保留作者版权是对原创作者的尊敬.
+
+ 3.如果有问题,可以通过上面提供的方式进行解答,但作者
+   时间有限,如果不能及时或者不解答,请谅解.
+
+ 4.作者对非法使用该程序导致的问题,不予负责.
+
+ 5.本程序版权归 鲁虺文化网 所有.禁止任何侵权行为!
+
++------------------------------------------------------------------------+
+*/
+--版权说明结束-->	
+
+
+
+
+</body>
+</html>

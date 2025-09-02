@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网址导航系统</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        dark: '#1F2937',
+                        light: '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .nav-item {
+                @apply px-4 py-2 rounded-md transition-colors hover:bg-primary/10 cursor-pointer;
+            }
+            .nav-item.active {
+                @apply bg-primary/20 font-medium text-primary;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- 顶部导航栏 -->
+    <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-compass text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-dark">网址导航</h1>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">首页</a>
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">关于</a>
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">反馈</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <i class="fa fa-moon-o text-gray-600"></i>
+                </button>
+                <button class="p-2 rounded-full hover:bg-gray-100 transition-colors md:hidden">
+                    <i class="fa fa-bars text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 搜索栏 -->
+        <div class="bg-gray-100 py-4">
+            <div class="container mx-auto px-4">
+                <div class="relative max-w-2xl mx-auto">
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="搜索网站..." 
+                        class="w-full py-3 px-5 pr-12 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                    >
+                    <button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-primary transition-colors">
+                        <i class="fa fa-search text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- 左侧分类导航 -->
+            <aside class="md:w-64 lg:w-72 shrink-0">
+                <div class="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fa fa-folder-open text-primary mr-2"></i>分类导航
+                    </h2>
+                    <ul id="category-list" class="space-y-1">
+                        <!-- 分类将通过JavaScript动态生成 -->
+                    </ul>
+                </div>
+            </aside>
+            
+            <!-- 右侧网站列表 -->
+            <div class="flex-1">
+                <!-- 分类标题 -->
+                <div class="mb-6">
+                    <h2 id="category-title" class="text-2xl font-bold text-dark">全部网站</h2>
+                    <p id="category-description" class="text-gray-500 mt-1">发现并访问各类优质网站</p>
+                </div>
+                
+                <!-- 网站列表 -->
+                <div id="website-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- 网站卡片将通过JavaScript动态生成 -->
+                </div>
+                
+                <!-- 加载更多按钮 -->
+                <div class="mt-8 text-center">
+                    <button id="load-more" class="px-6 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        加载更多 <i class="fa fa-chevron-down ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 网站详情模态框 -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 id="detail-title" class="text-xl font-bold"></h3>
+                    <button id="close-modal" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <i class="fa fa-times text-gray-500"></i>
+                    </button>
+                </div>
+                
+                <div class="border-b pb-4 mb-4">
+                    <p class="text-gray-500 mb-2 flex items-center">
+                        <i class="fa fa-link mr-2"></i>
+                        <a id="detail-url" href="#" target="_blank" class="text-primary hover:underline"></a>
+                    </p>
+                    <p id="detail-short-desc" class="text-gray-600"></p>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-2">详细测评</h4>
+                    <div id="detail-full-review" class="text-gray-700 leading-relaxed"></div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <a id="visit-button" href="#" target="_blank" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center">
+                        <i class="fa fa-external-link mr-2"></i> 访问网站
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-12 mt-16">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fa fa-compass text-primary mr-2"></i>网址导航
+                    </h3>
+                    <p class="text-gray-400">提供优质、安全、实用的网站导航服务，让您的网络生活更便捷。</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">快速链接</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-primary transition-colors">首页</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">关于我们</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">联系方式</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors">使用帮助</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">关注我们</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-primary transition-colors">
+                            <i class="fa fa-weibo"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-primary transition-colors">
+                            <i class="fa fa-wechat"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-primary transition-colors">
+                            <i class="fa fa-github"></i>
+                        </a>
+                    </div>
+                    <p class="mt-4 text-gray-400">反馈邮箱: feedback@example.com</p>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500">
+                <p>© 2023 网址导航系统 版权所有</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 模拟数据 - 实际应用中会从服务器或本地文件加载
+        // 这里模拟文件夹(分类)和文件(网站)结构
+        const categoriesData = [
+            {
+                id: 'social',
+                name: '社交平台',
+                description: '国内外主流社交网络平台',
+                websites: [
+                    {
+                        name: 'Facebook',
+                        url: 'https://facebook.com',
+                        shortDesc: '全球最大的社交网络平台',
+                        fullReview: 'Facebook是全球最大的社交网络服务网站，成立于2004年。用户可以在上面添加好友、分享信息、发布照片和视频，以及加入各种兴趣群组。作为全球最具影响力的社交媒体之一，Facebook拥有数十亿活跃用户，覆盖了几乎所有国家和地区。'
+                    },
+                    {
+                        name: 'Twitter',
+                        url: 'https://twitter.com',
+                        shortDesc: '实时信息分享社交平台',
+                        fullReview: 'Twitter是一个基于短消息的社交网络平台，用户可以发布和阅读不超过280个字符的消息，称为"推文"。它是全球实时新闻和热点事件传播的重要渠道，许多名人、政客和企业都在上面拥有大量粉丝。Twitter的实时性使其成为突发事件和公共讨论的重要平台。'
+                    },
+                    {
+                        name: 'Instagram',
+                        url: 'https://instagram.com',
+                        shortDesc: '图片和视频分享社交平台',
+                        fullReview: 'Instagram是一个专注于图片和视频分享的社交平台，由Facebook公司拥有。它允许用户上传照片和视频，并可以对其进行编辑和添加滤镜。Instagram Stories功能允许用户分享24小时后消失的内容，而Reels则支持短视频创作。该平台特别受年轻人欢迎，是视觉内容创作者的重要展示渠道。'
+                    }
+                ]
+            },
+            {
+                id: 'search',
+                name: '搜索引擎',
+                description: '各类搜索引擎服务',
+                websites: [
+                    {
+                        name: 'Google',
+                        url: 'https://google.com',
+                        shortDesc: '全球最大的搜索引擎',
+                        fullReview: 'Google是全球最受欢迎的搜索引擎，由Google公司开发。它提供网页搜索、图片搜索、视频搜索、地图服务等多种功能。Google的搜索算法以其准确性和相关性而闻名，使其成为全球互联网用户的首选搜索引擎。除了搜索服务外，Google还提供Gmail、Google Drive、Google Maps等一系列广泛使用的互联网服务。'
+                    },
+                    {
+                        name: 'Bing',
+                        url: 'https://bing.com',
+                        shortDesc: '微软旗下的搜索引擎',
+                        fullReview: 'Bing是微软公司开发的搜索引擎，作为其在线服务战略的一部分。Bing提供网页搜索、图片搜索、视频搜索和地图服务等功能，与Google展开竞争。Bing以其精美的首页图片和整合的微软服务而受到一部分用户的喜爱，尤其在企业用户中拥有一定的市场份额。'
+                    },
+                    {
+                        name: 'DuckDuckGo',
+                        url: 'https://duckduckgo.com',
+                        shortDesc: '注重隐私保护的搜索引擎',
+                        fullReview: 'DuckDuckGo是一个以隐私保护为主要特色的搜索引擎。与其他搜索引擎不同，DuckDuckGo不会跟踪用户的搜索历史，也不会收集个人信息用于广告定向。这使得它成为注重隐私的用户的理想选择。尽管市场份额不如Google等大型搜索引擎，但DuckDuckGo的用户群体正在稳步增长。'
+                    }
+                ]
+            },
+            {
+                id: 'video',
+                name: '视频平台',
+                description: '在线视频观看和分享平台',
+                websites: [
+                    {
+                        name: 'YouTube',
+                        url: 'https://youtube.com',
+                        shortDesc: '全球最大的视频分享平台',
+                        fullReview: 'YouTube是全球最大的视频分享和观看平台，由Google公司拥有。用户可以在上面上传、观看和分享视频内容，涵盖了从音乐、教育、娱乐到新闻等各种类型。许多创作者通过YouTube频道获得收入，使其成为重要的内容创作和分发平台。YouTube还提供直播功能和付费订阅服务。'
+                    },
+                    {
+                        name: 'TikTok',
+                        url: 'https://tiktok.com',
+                        shortDesc: '流行的短视频社交平台',
+                        fullReview: 'TikTok是一个专注于短视频内容的社交平台，允许用户创建和分享15秒到3分钟的短视频。它的算法能够根据用户的兴趣快速推荐内容，使其在全球范围内迅速流行，尤其受到年轻用户的欢迎。TikTok上的内容多样，包括舞蹈、喜剧、教育和生活方式等。该平台也成为许多音乐和流行文化趋势的发源地。'
+                    }
+                ]
+            },
+            {
+                id: 'email',
+                name: '邮箱服务',
+                description: '各类电子邮件服务提供商',
+                websites: [
+                    {
+                        name: 'Gmail',
+                        url: 'https://gmail.com',
+                        shortDesc: 'Google提供的电子邮件服务',
+                        fullReview: 'Gmail是Google提供的免费电子邮件服务，以其大容量存储空间、强大的垃圾邮件过滤功能和与其他Google服务的无缝集成而闻名。Gmail提供了丰富的功能，如标签、过滤器、自动回复等，满足个人和企业用户的需求。作为全球最受欢迎的电子邮件服务之一，Gmail拥有数十亿活跃用户。'
+                    },
+                    {
+                        name: 'Outlook',
+                        url: 'https://outlook.com',
+                        shortDesc: '微软提供的电子邮件服务',
+                        fullReview: 'Outlook是微软提供的电子邮件服务，前身为Hotmail。它与微软的其他产品如Office 365、OneDrive等深度集成，适合需要处理大量工作邮件的用户。Outlook提供了日历、联系人管理等功能，使其成为一个全面的个人信息管理工具。对于使用Windows系统和微软产品生态的用户来说，Outlook是一个自然的选择。'
+                    }
+                ]
+            }
+        ];
+
+        // DOM元素
+        const categoryList = document.getElementById('category-list');
+        const categoryTitle = document.getElementById('category-title');
+        const categoryDescription = document.getElementById('category-description');
+        const websiteGrid = document.getElementById('website-grid');
+        const searchInput = document.getElementById('search-input');
+        const detailModal = document.getElementById('detail-modal');
+        const detailTitle = document.getElementById('detail-title');
+        const detailUrl = document.getElementById('detail-url');
+        const detailShortDesc = document.getElementById('detail-short-desc');
+        const detailFullReview = document.getElementById('detail-full-review');
+        const visitButton = document.getElementById('visit-button');
+        const closeModal = document.getElementById('close-modal');
+        const loadMoreBtn = document.getElementById('load-more');
+
+        // 当前显示的分类和网站
+        let currentCategory = null;
+        let filteredWebsites = [];
+        let displayedCount = 6;
+
+        // 初始化页面
+        function init() {
+            renderCategories();
+            showAllWebsites();
+            
+            // 事件监听
+            searchInput.addEventListener('input', handleSearch);
+            closeModal.addEventListener('click', () => {
+                detailModal.classList.remove('flex');
+                detailModal.classList.add('hidden');
+            });
+            loadMoreBtn.addEventListener('click', loadMore);
+            
+            // 点击模态框外部关闭
+            detailModal.addEventListener('click', (e) => {
+                if (e.target === detailModal) {
+                    detailModal.classList.remove('flex');
+                    detailModal.classList.add('hidden');
+                }
+            });
+        }
+
+        // 渲染分类列表
+        function renderCategories() {
+            // 添加"全部网站"选项
+            const allItem = document.createElement('li');
+            allItem.innerHTML = `
+                <a class="nav-item active flex items-center" data-category="all">
+                    <i class="fa fa-globe mr-2"></i>全部网站
+                </a>
+            `;
+            allItem.addEventListener('click', () => {
+                setActiveCategory('all');
+                showAllWebsites();
+            });
+            categoryList.appendChild(allItem);
+            
+            // 添加各个分类
+            categoryData.forEach(category => {
+                const item = document.createElement('li');
+                item.innerHTML = `
+                    <a class="nav-item flex items-center" data-category="${category.id}">
+                        <i class="fa fa-folder mr-2"></i>${category.name}
+                    </a>
+                `;
+                item.addEventListener('click', () => {
+                    setActiveCategory(category.id);
+                    showCategoryWebsites(category.id);
+                });
+                categoryList.appendChild(item);
+            });
+        }
+
+        // 设置当前激活的分类
+        function setActiveCategory(categoryId) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`.nav-item[data-category="${categoryId}"]`).classList.add('active');
+        }
+
+        // 显示所有网站
+        function showAllWebsites() {
+            currentCategory = 'all';
+            categoryTitle.textContent = '全部网站';
+            categoryDescription.textContent = '发现并访问各类优质网站';
+            
+            // 收集所有分类的网站
+            const allWebsites = [];
+            categoryData.forEach(category => {
+                allWebsites.push(...category.websites.map(website => ({
+                    ...website,
+                    category: category.name
+                })));
+            });
+            
+            renderWebsites(allWebsites);
+        }
+
+        // 显示特定分类的网站
+        function showCategoryWebsites(categoryId) {
+            const category = categoryData.find(c => c.id === categoryId);
+            if (!category) return;
+            
+            currentCategory = categoryId;
+            categoryTitle.textContent = category.name;
+            categoryDescription.textContent = category.description;
+            
+            // 为每个网站添加分类信息
+            const websitesWithCategory = category.websites.map(website => ({
+                ...website,
+                category: category.name
+            }));
+            
+            renderWebsites(websitesWithCategory);
+        }
+
+        // 渲染网站列表
+        function renderWebsites(websites) {
+            filteredWebsites = websites;
+            displayedCount = 6; // 重置显示计数
+            
+            // 清空现有内容
+            websiteGrid.innerHTML = '';
+            
+            // 只显示部分网站（用于分页加载）
+            const websitesToShow = filteredWebsites.slice(0, displayedCount);
+            
+            if (websitesToShow.length === 0) {
+                websiteGrid.innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <i class="fa fa-search text-gray-300 text-5xl mb-4"></i>
+                        <p class="text-gray-500">没有找到匹配的网站</p>
+                    </div>
+                `;
+                loadMoreBtn.classList.add('hidden');
+                return;
+            }
+            
+            // 创建网站卡片
+            websitesToShow.forEach(website => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-sm overflow-hidden card-hover';
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-semibold text-lg">${website.name}</h3>
+                            <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">${website.category}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">${website.shortDesc}</p>
+                        <div class="flex justify-between items-center">
+                            <a href="${website.url}" target="_blank" class="text-primary text-sm hover:underline flex items-center">
+                                <i class="fa fa-external-link mr-1"></i> 访问
+                            </a>
+                            <button class="text-gray-500 hover:text-primary text-sm view-detail" 
+                                    data-name="${website.name}"
+                                    data-url="${website.url}"
+                                    data-short="${website.shortDesc}"
+                                    data-full="${website.fullReview}">
+                                <i class="fa fa-info-circle mr-1"></i> 详情
+                            </button>
+                        </div>
+                    </div>
+                `;
+                websiteGrid.appendChild(card);
+                
+                // 添加详情按钮事件
+                card.querySelector('.view-detail').addEventListener('click', (e) => {
+                    const data = e.currentTarget.dataset;
+                    openDetailModal(data.name, data.url, data.short, data.full);
+                });
+            });
+            
+            // 控制"加载更多"按钮显示
+            if (filteredWebsites.length > displayedCount) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+        }
+
+        // 打开详情模态框
+        function openDetailModal(name, url, shortDesc, fullReview) {
+            detailTitle.textContent = name;
+            detailUrl.textContent = url;
+            detailUrl.href = url;
+            detailShortDesc.textContent = shortDesc;
+            detailFullReview.textContent = fullReview;
+            visitButton.href = url;
+            
+            detailModal.classList.remove('hidden');
+            detailModal.classList.add('flex');
+        }
+
+        // 处理搜索
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            
+            if (query === '') {
+                // 搜索为空，显示当前分类的所有网站
+                if (currentCategory === 'all') {
+                    showAllWebsites();
+                } else {
+                    showCategoryWebsites(currentCategory);
+                }
+                return;
+            }
+            
+            // 收集所有网站
+            let allWebsites = [];
+            categoryData.forEach(category => {
+                allWebsites.push(...category.websites.map(website => ({
+                    ...website,
+                    category: category.name
+                })));
+            });
+            
+            // 过滤网站
+            const results = allWebsites.filter(website => 
+                website.name.toLowerCase().includes(query) || 
+                website.shortDesc.toLowerCase().includes(query) ||
+                website.fullReview.toLowerCase().includes(query) ||
+                website.category.toLowerCase().includes(query)
+            );
+            
+            // 更新标题和描述
+            categoryTitle.textContent = `搜索结果: "${query}"`;
+            categoryDescription.textContent = `找到 ${results.length} 个匹配的网站`;
+            
+            // 渲染结果
+            renderWebsites(results);
+        }
+
+        // 加载更多网站
+        function loadMore() {
+            displayedCount += 6;
+            renderWebsites(filteredWebsites);
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+
+
+
+
+
+<!--版权说明开始
+/*
++------------------------------------------------------------------------+
+ System Name : Luhui Website Classification Navigation System V1.0.0
+ 系统名称 : 鲁虺网站分类导航系统 html JavaScript txt V1.0.0
++------------------------------------------------------------------------+
+ 创建 Created  2025-9-1 / 修改 Modify 2025-9-1
++------------------------------------------------------------------------+
+ Version : 1.0.0
++------------------------------------------------------------------------+
+ 版本更新 : 该版本所有详细更新细节都已在系统迭代说明中详述,如需了解请查阅鲁虺软件文档
+ 鲁虺软件 : http://soft.luhui.net 点击浏览鲁虺软件开发文档“软件开发”列表查询品鉴
++------------------------------------------------------------------------+
+ Author : 鲁虺文化网  冠富研究院  冠富商务通
++------------------------------------------------------------------------+
+ Powered by luhui.net 2004-01-11
++------------------------------------------------------------------------+
+ QQ : 63625244  tel:13162920188  tel:13386070835   tel:15900718107
+ Email : info@mail.luhui.net
+ 鲁虺文化网 : http://www.luhui.net
+ 冠富研究院 : http://www.guanfu.org
+ 冠富商务通 : http://www.guanfu.net.cn
++------------------------------------------------------------------------+
+ Note :
+
+ 1.本软件对于非商业用户完全免费,如果要使用在商业用途
+   方面,必须取得作者的授权.
+
+ 2.你可以任意传播以及修改本程序,但不能以任何形式删除
+   本程序的版权.请记住,保留作者版权是对原创作者的尊敬.
+
+ 3.如果有问题,可以通过上面提供的方式进行解答,但作者
+   时间有限,如果不能及时或者不解答,请谅解.
+
+ 4.作者对非法使用该程序导致的问题,不予负责.
+
+ 5.本程序版权归 鲁虺文化网 所有.禁止任何侵权行为!
+
++------------------------------------------------------------------------+
+*/
+--版权说明结束-->	
+
+
+
+
+
+
+
+	
+</body>
+</html>
